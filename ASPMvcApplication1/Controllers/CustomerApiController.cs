@@ -45,6 +45,7 @@ namespace ASPMvcApplication1.Controllers
         }
 
         // GET api/values
+        [HttpGet]
         public IEnumerable<Menu> GetMenu()
         {
             var menus = context.Menus;
@@ -78,7 +79,7 @@ namespace ASPMvcApplication1.Controllers
             return new { Success = true };            
         }      
 
-        public string ToAbsoluteUrl(string relativeUrl)
+        private string ToAbsoluteUrl(string relativeUrl)
         {
             var url = HttpContext.Current.Request.Url;
             var port = (url.AbsoluteUri.Contains("localhost") || url.AbsoluteUri.Contains("pc")) ? (":" + url.Port) : String.Empty;
@@ -86,7 +87,7 @@ namespace ASPMvcApplication1.Controllers
             return String.Format("{0}://{1}{2}{3}", url.Scheme, url.Host, port, VirtualPathUtility.ToAbsolute(relativeUrl));
         }
 
-        public double GetDistance(Position From, Position To, char unit = 'K')
+        private double GetDistance(Position From, Position To, char unit = 'K')
         {
             double rlat1 = Math.PI * From.Latitude / 180;
             double rlat2 = Math.PI * To.Latitude / 180;
