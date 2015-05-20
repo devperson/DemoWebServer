@@ -15,6 +15,21 @@ namespace ASPMvcApplication1.Controllers
         DataBaseContext context = new DataBaseContext();
 
         [HttpPost]
+        public object Login([FromBody]Customer customer)
+        {
+            bool result = false;
+            try
+            {
+                result = context.Customers.Any(c => c.UserName == customer.UserName && c.Password == customer.Password);
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error.", Success = false };
+            }
+            return new { Success = result };
+        }
+
+        [HttpPost]
         public object Register([FromBody]Customer customer)
         {
             try
