@@ -48,9 +48,9 @@ namespace ASPMvcApplication1.Controllers
         [HttpGet]
         public IEnumerable<Menu> GetMenu()
         {
-            var menus = context.Menus;
+            var menus = context.Menus.ToList();
             foreach (var menu in menus)            
-                menu.Image = this.ToAbsoluteUrl(string.Format("/Images/{0}", menu.Image));            
+                menu.Image = this.ToAbsoluteUrl(string.Format("/Images/Products/{0}", menu.Image));            
 
             return menus;
         }
@@ -58,9 +58,9 @@ namespace ASPMvcApplication1.Controllers
         [HttpPost]
         public object Order([FromBody]int menuId, [FromBody]int customerId)
         {
+            var order = new Order();
             try
-            {
-                var order = new Order();
+            {                
                 order.CustomerId = customerId;
                 order.MenuId = menuId;
                 var customer = context.Customers.First(c=>c.Id==customerId);
@@ -76,7 +76,7 @@ namespace ASPMvcApplication1.Controllers
                 return new { Error = "Server error.", Success = false };
             }
 
-            return new { Success = true };            
+            return new { Success = true, DriverPosition = new Position(order.Driver.Latitude, order.Driver.Longitude) };            
         }      
 
         private string ToAbsoluteUrl(string relativeUrl)
