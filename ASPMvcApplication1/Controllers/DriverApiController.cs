@@ -13,6 +13,25 @@ namespace ASPMvcApplication1.Controllers
     {
         DataBaseContext context = new DataBaseContext();
 
+        [HttpPost]
+        public object Login([FromBody]Driver driver)
+        {
+            try
+            {
+                var user = context.Drivers.FirstOrDefault(d => d.UserName == driver.UserName && d.Password == driver.Password);
+                if (user != null)
+                {
+                    return new { Success = true, DriverId = user.Id };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new { Error = ex.Message, Success = false };
+            }
+
+            return new { Success = false };
+        }
+
         // GET api/values
         [HttpPost]
         public object Register([FromBody]Driver driver)
@@ -21,24 +40,62 @@ namespace ASPMvcApplication1.Controllers
             {
                 context.Drivers.Add(driver);
                 context.SaveChanges();
+
+                return new { Success = true, DriverId = driver.Id };
             }
             catch (Exception ex)
             {
                 return new { Error = "Server error.", Success = false };
-            }
-            return new { Success = true };  
+            }            
         }
 
         [HttpGet]
-        public IEnumerable<Order> GetOrders(int driverId, int lastOrderId)
+        public object GetOrders(int driverId, int lastOrderId)
         {
-            return context.Orders.Include("Menu").Include("Customer").Where(o => o.DriverId == driverId && !o.IsDelivered && o.Id > lastOrderId);
+            var orders = context.Orders.Include("Customer").Include("Details").Include("Menu").Where(o => o.DriverId == driverId && !o.IsDelivered && o.Id > lastOrderId);
+            var ordersModel = orders.Select(o => new 
+            { 
+                Id = o.Id, 
+                Date = o.Date, 
+                IsDelivered = o.IsDelivered, 
+                Meals = o.Details.Select(d => new 
+                { 
+                    Name = d.Menu.Name, 
+                    Description = d.Menu.Description, 
+                    Image = d.Menu.Image, 
+                    Price = d.Menu.Price, 
+                    Quantity = d.Qty 
+                }).ToList(),
+                User = new
+                {
+                    FirstName = o.Customer.FirstName,
+                    LastName = o.Customer.LastName,
+                    Phone = o.Customer.Phone,
+                    Gender = o.Customer.Gender,
+                    Address = new { 
+                        AddressText = o.Customer.Address,
+                        Position = new Position(o.Customer.Latitude, o.Customer.Longitude)
+                    }
+                }
+            }).ToList();
+
+            return ordersModel;
         }
 
         [HttpGet]
-        public IEnumerable<DriverInventory> GetInventory(int driverId)
+        public object GetInventory(int driverId)
         {
-            return context.DriverInventories.Include("Menu").Where(d => d.DriverId == driverId);
+            var inventory = context.DriverInventories.Include("Menu").Where(d => d.DriverId == driverId).ToList();
+            var invModels = inventory.Select(d => new
+            {
+                Name = d.Menu.Name,
+                Description = d.Menu.Description,
+                Image = d.Menu.Image,
+                Price = d.Menu.Price,
+                Quantity = d.Count
+            }).ToList();
+
+            return invModels;
         }
 
         [HttpPut]

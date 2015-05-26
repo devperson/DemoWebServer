@@ -16,17 +16,21 @@ namespace ASPMvcApplication1.Controllers
 
         [HttpPost]
         public object Login([FromBody]Customer customer)
-        {
-            bool result = false;
+        {            
             try
             {
-                result = context.Customers.Any(c => c.UserName == customer.UserName && c.Password == customer.Password);
+                var user = context.Customers.FirstOrDefault(c => c.UserName == customer.UserName && c.Password == customer.Password);
+                if(user!=null)
+                {
+                    return new { Success = true, UserId = user.Id };
+                }
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error.", Success = false };
+                return new { Error = ex.Message, Success = false };
             }
-            return new { Success = result };
+
+            return new { Success = false };
         }
 
         [HttpPost]
@@ -34,14 +38,32 @@ namespace ASPMvcApplication1.Controllers
         {
             try
             {
-                context.Customers.Add(customer);
-                context.SaveChanges();
+                if (context.Customers.All(c => c.UserName != customer.UserName))
+                {
+                    context.Customers.Add(customer);
+                    context.SaveChanges();
+                    return new { Success = true, UserId = customer.Id };
+                }
+                else
+                {
+                    return new { Success = true, Error = "User name already taken." };
+                }
             }
             catch(Exception ex)
             {
-                return new { Error = "Server error.", Success = false };
-            }
-            return new { Success = true };         
+                return new { Error = ex.Message, Success = false };
+            }            
+        }
+
+        public object UpdateUserLocation([FromBody]int customerId, [FromBody]Position pos, [FromBody]string address)
+        {
+            var customer = context.Customers.FirstOrDefault(c => c.Id == customerId);
+            customer.Latitude = pos.Latitude;
+            customer.Longitude = pos.Longitude;
+            customer.Address = address;
+            context.SaveChanges();
+
+            return new { Success = true };
         }
 
         // GET api/values
@@ -56,16 +78,22 @@ namespace ASPMvcApplication1.Controllers
         }
 
         [HttpPost]
-        public object Order([FromBody]int menuId, [FromBody]int customerId)
+        public object Order([FromBody]int customerId, List<OrderDetailModel> meals)
         {
             var order = new Order();
             try
-            {                
-                order.CustomerId = customerId;
-                order.MenuId = menuId;
-                var customer = context.Customers.First(c=>c.Id==customerId);
+            {
+
+                var customer = context.Customers.First(c => c.Id == customerId);
+                order.Customer = customer;
                 //TODO get driver which is most closest by location to customer.
-                order.Driver = context.Drivers.ToList().MinBy(d => this.GetDistance(new Position(d.Latitude, d.Longitude), new Position(customer.Latitude, customer.Longitude)));
+                order.Driver = context.Drivers.Where(d => d.IsApproved).ToList().MinBy(d => this.GetDistance(new Position(d.Latitude, d.Longitude), new Position(customer.Latitude, customer.Longitude)));
+
+                foreach (var meal in meals)
+                {
+                    order.Details.Add(new OrderDetail { MenuId = meal.Id, Qty = meal.Quantity });   
+                }                
+
                 context.Orders.Add(order);
                 context.SaveChanges();
 
@@ -76,8 +104,41 @@ namespace ASPMvcApplication1.Controllers
                 return new { Error = "Server error.", Success = false };
             }
 
-            return new { Success = true, DriverPosition = new Position(order.Driver.Latitude, order.Driver.Longitude) };            
-        }      
+            return new { Success = true, OrderId = order.Id, DriverId = order.Driver, DriverPosition = new Position(order.Driver.Latitude, order.Driver.Longitude) };            
+        }
+
+
+        [HttpGet]
+        public object GetOrders(int customerId)
+        {            
+            try
+            {
+                var orders = context.Orders.Where(c => c.Id == customerId);
+
+                var ordersModels = orders.Select(o => new OrderModel 
+                { 
+                    Id = o.Id, 
+                    Date = o.Date,
+                    IsDelivered = o.IsDelivered,
+                    Meals = o.Details.Select(od => new OrderDetailModel 
+                            { 
+                                Id = od.MenuId,
+                                Quantity = od.Qty 
+                            }).ToList(),
+                    Driver = new DriverModel
+                    {
+                        Id = o.DriverId,
+                        Position = new Position(o.Driver.Latitude,o.Driver.Longitude)
+                    }
+                }).ToList();
+
+                return ordersModels;
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error.", Success = false };
+            }
+        }    
 
         private string ToAbsoluteUrl(string relativeUrl)
         {
@@ -114,5 +175,38 @@ namespace ASPMvcApplication1.Controllers
         }
 
         
+    }
+
+
+    public class OrderModel
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public List<OrderDetailModel> Meals { get; set; }
+        public bool IsDelivered { get; set; }
+        public DriverModel Driver { get; set; }
+        
+    }
+    public class OrderDetailModel
+    {
+        public int Id { get; set; } //MenuId
+        public int Quantity { get; set; }
+    }
+
+    public class DriverModel
+    {
+        public int Id { get; set; }
+        public Position Position { get; set; }
+    }
+
+    public class Position
+    {
+        public Position(double lat, double lon)
+        {
+            this.Latitude = lat;
+            this.Longitude = lon;
+        }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 }

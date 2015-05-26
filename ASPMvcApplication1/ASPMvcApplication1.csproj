@@ -184,7 +184,6 @@
     <Compile Include="Controllers\CustomerApiController.cs" />
     <Compile Include="Controllers\DriverApiController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
-    <Compile Include="Controllers\Position.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -197,6 +196,7 @@
     <Compile Include="Models\Driver.cs" />
     <Compile Include="Models\Menu.cs" />
     <Compile Include="Models\Order.cs" />
+    <Compile Include="Models\OrderDetail.cs" />
     <Compile Include="ObjExtenssions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -11,7 +11,7 @@ namespace HServer.Models.DataAccess
     /// This class used before to make connection to DataBase, 
     /// here we can make configurations such as CreateDatabaseIfNotExists, DropCreateDatabaseAlways, DropCreateDatabaseIfModelChanges
     /// </summary>
-    public class DataBaseInitializer : CreateDatabaseIfNotExists<DataBaseContext>
+    public class DataBaseInitializer : DropCreateDatabaseAlways<DataBaseContext>
     {
 
         /// <summary>
