@@ -68,6 +68,7 @@ namespace ASPMvcApplication1.Controllers
                 }).ToList(),
                 User = new
                 {
+                    Id = o.CustomerId,
                     FirstName = o.Customer.FirstName,
                     LastName = o.Customer.LastName,
                     Phone = o.Customer.Phone,
