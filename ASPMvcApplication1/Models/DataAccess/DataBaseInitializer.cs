@@ -11,7 +11,7 @@ namespace HServer.Models.DataAccess
     /// This class used before to make connection to DataBase, 
     /// here we can make configurations such as CreateDatabaseIfNotExists, DropCreateDatabaseAlways, DropCreateDatabaseIfModelChanges
     /// </summary>
-    public class DataBaseInitializer : DropCreateDatabaseAlways<DataBaseContext>
+    public class DataBaseInitializer : DropCreateDatabaseIfModelChanges<DataBaseContext>
     {
 
         /// <summary>
@@ -20,8 +20,11 @@ namespace HServer.Models.DataAccess
         protected override void Seed(DataBaseContext context)
         {
             Driver driver = new Driver();
-            driver.FirstName = "Driver1";
-            driver.LastName = "D1";
+            driver.FirstName = "d1";
+            driver.LastName = "r1";
+            driver.Phone = "1234";
+            driver.UserName = "d1";
+            driver.Password = "123";
             context.Drivers.Add(driver);
 
 

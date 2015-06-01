@@ -206,6 +206,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="JsonSerializer.cs" />
     <Compile Include="Models\Admin.cs" />
     <Compile Include="Models\Customer.cs" />
     <Compile Include="Models\DataAccess\DataBaseContext.cs" />
@@ -366,7 +367,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>1732</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:1732/</IISUrl>
+          <IISUrl>http://xusanpc:1732/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

@@ -13,7 +13,7 @@ namespace ASPMvcApplication1.Controllers
     public class CustomerApiController : ApiController
     {
         DataBaseContext context = new DataBaseContext();
-
+        
         [HttpPost]
         public object Login([FromBody]Customer customer)
         {            
@@ -32,7 +32,7 @@ namespace ASPMvcApplication1.Controllers
 
             return new { Success = false };
         }
-
+        
         [HttpPost]
         public object Register([FromBody]Customer customer)
         {
@@ -42,7 +42,9 @@ namespace ASPMvcApplication1.Controllers
                 {
                     context.Customers.Add(customer);
                     context.SaveChanges();
+
                     return new { Success = true, UserId = customer.Id };
+                    //return Request.CreateResponse(HttpStatusCode.OK, new { Success = true, UserId = customer.Id });                    
                 }
                 else
                 {
@@ -54,42 +56,51 @@ namespace ASPMvcApplication1.Controllers
                 return new { Error = ex.Message, Success = false };
             }            
         }
-
-        public object UpdateUserLocation([FromBody]int customerId, [FromBody]Position pos, [FromBody]string address)
+        
+        [HttpPost]
+        public object UpdateUserLocation([FromBody]UserLocationModel location)
         {
-            var customer = context.Customers.FirstOrDefault(c => c.Id == customerId);
-            customer.Latitude = pos.Latitude;
-            customer.Longitude = pos.Longitude;
-            customer.Address = address;
+            var customer = context.Customers.FirstOrDefault(c => c.Id == location.UserId);
+            customer.Latitude = location.Position.Latitude;
+            customer.Longitude = location.Position.Longitude;
+            customer.Address = location.Address;
             context.SaveChanges();
 
             return new { Success = true };
         }
 
-        // GET api/values
+        
         [HttpGet]
-        public IEnumerable<Menu> GetMenu()
+        public object GetMenu()
         {
-            var menus = context.Menus.ToList();
-            foreach (var menu in menus)            
-                menu.Image = this.ToAbsoluteUrl(string.Format("/Images/Products/{0}", menu.Image));            
+            try
+            {
+                var menus = context.Menus.ToList();
+                foreach (var menu in menus)
+                    menu.Image = this.ToAbsoluteUrl(string.Format("/Images/Products/{0}", menu.Image));
 
-            return menus;
+                return new { Menu = menus, Success = true };
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error. " + ex.Message, Success = false };
+            }
         }
 
+
         [HttpPost]
-        public object Order([FromBody]int customerId, List<OrderDetailModel> meals)
+        public object Order([FromBody]OrderModel orderModel)
         {
             var order = new Order();
             try
             {
 
-                var customer = context.Customers.First(c => c.Id == customerId);
+                var customer = context.Customers.First(c => c.Id == orderModel.CustomerId);
                 order.Customer = customer;
                 //TODO get driver which is most closest by location to customer.
-                order.Driver = context.Drivers.Where(d => d.IsApproved).ToList().MinBy(d => this.GetDistance(new Position(d.Latitude, d.Longitude), new Position(customer.Latitude, customer.Longitude)));
+                order.Driver = context.Drivers.Where(d => d.IsApproved).ToList().MinBy(d => this.GetDistance(new Position(d.CurrentLatitude, d.CurrentLongitude), new Position(customer.Latitude, customer.Longitude)));
 
-                foreach (var meal in meals)
+                foreach (var meal in orderModel.Details)
                 {
                     order.Details.Add(new OrderDetail { MenuId = meal.Id, Qty = meal.Quantity });   
                 }                
@@ -101,10 +112,10 @@ namespace ASPMvcApplication1.Controllers
             }
             catch(Exception ex)
             {
-                return new { Error = "Server error.", Success = false };
+                return new { Error = "Server error. " + ex.Message, Success = false };
             }
 
-            return new { Success = true, OrderId = order.Id, DriverId = order.Driver, DriverPosition = new Position(order.Driver.Latitude, order.Driver.Longitude) };            
+            return new { Success = true, OrderId = order.Id, DriverId = order.Driver, DriverPosition = new Position(order.Driver.CurrentLatitude, order.Driver.CurrentLongitude) };            
         }
 
 
@@ -113,30 +124,30 @@ namespace ASPMvcApplication1.Controllers
         {            
             try
             {
-                var orders = context.Orders.Where(c => c.Id == customerId);
+                var orders = context.Orders.Where(c => c.Id == customerId).ToList();
 
-                var ordersModels = orders.Select(o => new OrderModel 
-                { 
-                    Id = o.Id, 
+                var ordersModels = orders.Select(o => new
+                {
+                    Id = o.Id,
                     Date = o.Date,
                     IsDelivered = o.IsDelivered,
-                    Meals = o.Details.Select(od => new OrderDetailModel 
-                            { 
+                    Meals = o.Details.Select(od => new
+                            {
                                 Id = od.MenuId,
-                                Quantity = od.Qty 
+                                Quantity = od.Qty
                             }).ToList(),
-                    Driver = new DriverModel
+                    Driver = new
                     {
                         Id = o.DriverId,
-                        Position = new Position(o.Driver.Latitude,o.Driver.Longitude)
+                        Position = new Position(o.Driver.CurrentLatitude, o.Driver.CurrentLongitude)
                     }
                 }).ToList();
 
-                return ordersModels;
+                return new { Orders = ordersModels, Success = true };
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error.", Success = false };
+                return new { Error = "Server error. " + ex.Message, Success = false };
             }
         }    
 
@@ -173,18 +184,18 @@ namespace ASPMvcApplication1.Controllers
 
             return dist;
         }
-
-        
     }
 
 
     public class OrderModel
     {
-        public int Id { get; set; }
-        public DateTime Date { get; set; }
-        public List<OrderDetailModel> Meals { get; set; }
-        public bool IsDelivered { get; set; }
-        public DriverModel Driver { get; set; }
+        public int CustomerId { get; set; }
+        public List<OrderDetailModel> Details { get; set; }
+        //public int Id { get; set; }
+        //public DateTime Date { get; set; }
+        //public List<OrderDetailModel> Meals { get; set; }
+        //public bool IsDelivered { get; set; }
+        //public DriverModel Driver { get; set; }
         
     }
     public class OrderDetailModel
@@ -197,6 +208,13 @@ namespace ASPMvcApplication1.Controllers
     {
         public int Id { get; set; }
         public Position Position { get; set; }
+    }
+
+    public class UserLocationModel
+    {
+        public int UserId { get; set; }
+        public Position Position { get; set; }
+        public string Address { get; set; }
     }
 
     public class Position

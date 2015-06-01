@@ -24,8 +24,9 @@ namespace ASPMvcApplication1.Models
         public string Postal { get; set; }
         public string Country { get; set; }
 
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
+        public double CurrentLatitude { get; set; }
+        public double CurrentLongitude { get; set; }
+        public string CurrentAddress { get; set; }
 
         //Driver License
         public string LicenseNumber { get; set; }

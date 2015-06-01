@@ -23,13 +23,14 @@ namespace ASPMvcApplication1.Controllers
                 {
                     return new { Success = true, DriverId = user.Id };
                 }
+                else
+                    return new { Success = false, Error = "User name or password is incorrect." };
             }
             catch (Exception ex)
             {
-                return new { Error = ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message, Success = false };
             }
-
-            return new { Success = false };
+            
         }
 
         // GET api/values
@@ -38,6 +39,10 @@ namespace ASPMvcApplication1.Controllers
         {
             try
             {
+                var user = context.Drivers.FirstOrDefault(d => d.UserName == driver.UserName);
+                if (user != null)
+                    return new { Success = false, Error = "User name '" + driver.UserName + "' already registered." };
+
                 context.Drivers.Add(driver);
                 context.SaveChanges();
 
@@ -45,65 +50,96 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error.", Success = false };
+                return new { Error = "Server error. " + ex.Message, Success = false };
             }            
+        }
+
+        [HttpPost]
+        public object UpdateDriverLocation([FromBody]UserLocationModel location)
+        {
+            var driver = context.Drivers.FirstOrDefault(c => c.Id == location.UserId);
+            driver.CurrentLatitude = location.Position.Latitude;
+            driver.CurrentLongitude = location.Position.Longitude;
+            driver.CurrentAddress = location.Address;
+            context.SaveChanges();
+
+            return new { Success = true };
         }
 
         [HttpGet]
         public object GetOrders(int driverId, int lastOrderId)
         {
-            var orders = context.Orders.Include("Customer").Include("Details").Include("Menu").Where(o => o.DriverId == driverId && !o.IsDelivered && o.Id > lastOrderId);
-            var ordersModel = orders.Select(o => new 
-            { 
-                Id = o.Id, 
-                Date = o.Date, 
-                IsDelivered = o.IsDelivered, 
-                Meals = o.Details.Select(d => new 
-                { 
-                    Name = d.Menu.Name, 
-                    Description = d.Menu.Description, 
-                    Image = d.Menu.Image, 
-                    Price = d.Menu.Price, 
-                    Quantity = d.Qty 
-                }).ToList(),
-                User = new
+            try
+            {
+                var orders = context.Orders.Include("Customer").Include("Details").Include("Details.Menu").Where(o => o.DriverId == driverId && !o.IsDelivered && o.Id > lastOrderId).ToList();
+                var ordersModel = orders.Select(o => new
                 {
-                    Id = o.CustomerId,
-                    FirstName = o.Customer.FirstName,
-                    LastName = o.Customer.LastName,
-                    Phone = o.Customer.Phone,
-                    Gender = o.Customer.Gender,
-                    Address = new { 
-                        AddressText = o.Customer.Address,
-                        Position = new Position(o.Customer.Latitude, o.Customer.Longitude)
+                    Id = o.Id,
+                    Date = o.Date,
+                    IsDelivered = o.IsDelivered,
+                    Meals = o.Details.Select(d => new
+                    {
+                        Name = d.Menu.Name,
+                        Description = d.Menu.Description,
+                        Image = d.Menu.Image,
+                        Price = d.Menu.Price,
+                        Quantity = d.Qty
+                    }).ToList(),
+                    User = new
+                    {
+                        Id = o.CustomerId,
+                        FirstName = o.Customer.FirstName,
+                        LastName = o.Customer.LastName,
+                        Phone = o.Customer.Phone,
+                        Gender = o.Customer.Gender,
+                        Address = new
+                        {
+                            AddressText = o.Customer.Address,
+                            Position = new Position(o.Customer.Latitude, o.Customer.Longitude)
+                        }
                     }
-                }
-            }).ToList();
+                }).ToList();
 
-            return ordersModel;
+                return new { Orders = ordersModel, Success = true };
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error. " + ex.Message, Success = false };
+            }  
         }
 
         [HttpGet]
         public object GetInventory(int driverId)
         {
-            var inventory = context.DriverInventories.Include("Menu").Where(d => d.DriverId == driverId).ToList();
-            var invModels = inventory.Select(d => new
+            try
             {
-                Name = d.Menu.Name,
-                Description = d.Menu.Description,
-                Image = d.Menu.Image,
-                Price = d.Menu.Price,
-                Quantity = d.Count
-            }).ToList();
+                var inventory = context.DriverInventories.Include("Menu").Where(d => d.DriverId == driverId).ToList();
+                var invModels = inventory.Select(d => new
+                {
+                    Name = d.Menu.Name,
+                    Description = d.Menu.Description,
+                    Image = d.Menu.Image,
+                    Price = d.Menu.Price,
+                    Quantity = d.Count
+                }).ToList();
 
-            return invModels;
+                return new { Inventories = invModels, Success = true };
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error. " + ex.Message, Success = false };
+            }
         }
 
+
+
         [HttpPut]
-        public void CompleteOrder([FromBody]int orderId)
+        public object CompleteOrder([FromBody]int orderId)
         {
             context.Orders.FirstOrDefault(o => o.Id == orderId).IsDelivered = true;
             context.SaveChanges();
+
+            return new { Success = true };
         }
     }
 }

@@ -25,10 +25,11 @@ namespace ASPMvcApplication1
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
             var config = GlobalConfiguration.Configuration;
-            config.Formatters.JsonFormatter.UseDataContractJsonSerializer = true;
-            config.Formatters.JsonFormatter.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-            config.Formatters.JsonFormatter.SerializerSettings.Converters.Add(new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-ddTHH:mm:ssZ" });
+            config.Formatters.Insert(0, new JsonNetFormatter());            
+            config.Formatters.JsonFormatter.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;            
             config.Formatters.Remove(config.Formatters.XmlFormatter);
         }
     }
+
+
 }
