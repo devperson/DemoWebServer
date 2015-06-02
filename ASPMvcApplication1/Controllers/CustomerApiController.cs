@@ -13,24 +13,22 @@ namespace ASPMvcApplication1.Controllers
     public class CustomerApiController : ApiController
     {
         DataBaseContext context = new DataBaseContext();
-        
+
         [HttpPost]
         public object Login([FromBody]Customer customer)
-        {            
+        {
             try
             {
                 var user = context.Customers.FirstOrDefault(c => c.UserName == customer.UserName && c.Password == customer.Password);
-                if(user!=null)
-                {
+                if (user != null)
                     return new { Success = true, UserId = user.Id };
-                }
+                else
+                    return new { Error = "User name or password is incorrect." };
             }
             catch (Exception ex)
             {
-                return new { Error = ex.Message, Success = false };
+                return new { Error = ex.Message };
             }
-
-            return new { Success = false };
         }
         
         [HttpPost]
@@ -48,12 +46,12 @@ namespace ASPMvcApplication1.Controllers
                 }
                 else
                 {
-                    return new { Success = true, Error = "User name already taken." };
+                    return new { Error = "User name already taken." };
                 }
             }
             catch(Exception ex)
             {
-                return new { Error = ex.Message, Success = false };
+                return new { Error = ex.Message };
             }            
         }
         
@@ -83,7 +81,7 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message};
             }
         }
 
@@ -98,7 +96,9 @@ namespace ASPMvcApplication1.Controllers
                 var customer = context.Customers.First(c => c.Id == orderModel.CustomerId);
                 order.Customer = customer;
                 //TODO get driver which is most closest by location to customer.
-                order.Driver = context.Drivers.Where(d => d.IsApproved).ToList().MinBy(d => this.GetDistance(new Position(d.CurrentLatitude, d.CurrentLongitude), new Position(customer.Latitude, customer.Longitude)));
+
+                //.Where(d => d.IsApproved)
+                order.Driver = context.Drivers.ToList().MinBy(d => this.GetDistance(new Position(d.CurrentLatitude, d.CurrentLongitude), new Position(customer.Latitude, customer.Longitude)));
 
                 foreach (var meal in orderModel.Details)
                 {
@@ -112,19 +112,19 @@ namespace ASPMvcApplication1.Controllers
             }
             catch(Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message};
             }
 
-            return new { Success = true, OrderId = order.Id, DriverId = order.Driver, DriverPosition = new Position(order.Driver.CurrentLatitude, order.Driver.CurrentLongitude) };            
+            return new { Success = true, OrderId = order.Id, DriverId = order.Driver.Id, Latitude = order.Driver.CurrentLatitude, Longitude = order.Driver.CurrentLongitude };            
         }
 
 
         [HttpGet]
         public object GetOrders(int customerId)
-        {            
+        {
             try
             {
-                var orders = context.Orders.Where(c => c.Id == customerId).ToList();
+                var orders = context.Orders.Include("Details").Include("Driver").Where(c => c.CustomerId == customerId).ToList();
 
                 var ordersModels = orders.Select(o => new
                 {
@@ -139,7 +139,8 @@ namespace ASPMvcApplication1.Controllers
                     Driver = new
                     {
                         Id = o.DriverId,
-                        Position = new Position(o.Driver.CurrentLatitude, o.Driver.CurrentLongitude)
+                        Lat = o.Driver.CurrentLatitude,
+                        Lon = o.Driver.CurrentLongitude
                     }
                 }).ToList();
 
@@ -147,7 +148,7 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message };
             }
         }    
 

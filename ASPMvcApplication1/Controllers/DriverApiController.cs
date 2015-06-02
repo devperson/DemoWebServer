@@ -24,11 +24,11 @@ namespace ASPMvcApplication1.Controllers
                     return new { Success = true, DriverId = user.Id };
                 }
                 else
-                    return new { Success = false, Error = "User name or password is incorrect." };
+                    return new { Error = "User name or password is incorrect." };
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message };
             }
             
         }
@@ -41,7 +41,7 @@ namespace ASPMvcApplication1.Controllers
             {
                 var user = context.Drivers.FirstOrDefault(d => d.UserName == driver.UserName);
                 if (user != null)
-                    return new { Success = false, Error = "User name '" + driver.UserName + "' already registered." };
+                    return new { Error = "User name '" + driver.UserName + "' already registered." };
 
                 context.Drivers.Add(driver);
                 context.SaveChanges();
@@ -50,7 +50,7 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message};
             }            
         }
 
@@ -95,7 +95,8 @@ namespace ASPMvcApplication1.Controllers
                         Address = new
                         {
                             AddressText = o.Customer.Address,
-                            Position = new Position(o.Customer.Latitude, o.Customer.Longitude)
+                            Lat = o.Customer.Latitude,
+                            Lon = o.Customer.Longitude                            
                         }
                     }
                 }).ToList();
@@ -104,7 +105,7 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message};
             }  
         }
 
@@ -127,7 +128,7 @@ namespace ASPMvcApplication1.Controllers
             }
             catch (Exception ex)
             {
-                return new { Error = "Server error. " + ex.Message, Success = false };
+                return new { Error = "Server error. " + ex.Message};
             }
         }
 
