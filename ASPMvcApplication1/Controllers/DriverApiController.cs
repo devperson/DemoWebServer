@@ -71,7 +71,7 @@ namespace ASPMvcApplication1.Controllers
         {
             try
             {
-                var orders = context.Orders.Include("Customer").Include("Details").Include("Details.Menu").Where(o => o.DriverId == driverId && !o.IsDelivered && o.Id > lastOrderId).ToList();
+                var orders = context.Orders.Include("Customer").Include("Details").Include("Details.Menu").Where(o => o.DriverId == driverId && o.Id > lastOrderId).ToList();
                 var ordersModel = orders.Select(o => new
                 {
                     Id = o.Id,
@@ -134,13 +134,21 @@ namespace ASPMvcApplication1.Controllers
 
 
 
-        [HttpPut]
-        public object CompleteOrder([FromBody]int orderId)
+        [HttpPost]
+        public object CompleteOrder([FromBody]int OrderId)
         {
-            context.Orders.FirstOrDefault(o => o.Id == orderId).IsDelivered = true;
-            context.SaveChanges();
+            try
+            {
+                var order = context.Orders.FirstOrDefault(o => o.Id == OrderId);                
+                order.IsDelivered = true;
+                context.SaveChanges();
 
-            return new { Success = true };
+                return new { Success = true };
+            }
+            catch(Exception ex)
+            {
+                return new { Error = "Server error. " + ex.Message };
+            }            
         }
     }
 }
