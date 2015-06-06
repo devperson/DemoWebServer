@@ -54,6 +54,21 @@ namespace ASPMvcApplication1.Controllers
                 return new { Error = ex.Message };
             }            
         }
+
+        [HttpGet]
+        public object GetLastAddress(int customerId)
+        {
+            try
+            {
+                var cust = context.Customers.FirstOrDefault(c => c.Id == customerId);
+
+                return new { Address = cust.Address, Lat = cust.Latitude, Lon = cust.Longitude, Success = true };
+            }
+            catch (Exception ex)
+            {
+                return new { Error = "Server error. " + ex.Message };
+            }
+        }    
         
         [HttpPost]
         public object UpdateUserLocation([FromBody]UserLocationModel location)
